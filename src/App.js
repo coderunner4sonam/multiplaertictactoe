@@ -18,6 +18,7 @@ function App() {
   const [board, setBoard]=useState(initialBoard);
   const [currentPlayer, setCurrentPlayer]=useState("X");
   const [win, setWin]=useState(false);
+  const [draw, setDraw]=useState(false);
 
   function generateBoard (n){
     const newBoard = [];  
@@ -44,7 +45,10 @@ function App() {
       setWin(true);
       return;
     }
-    checkWin(newBoard)
+    if(checkDrawn(newBoard)){
+      setDraw(true);
+      return
+    }
 
     setCurrentPlayer(currentPlayer==="X"?"O":"X");
 
@@ -111,6 +115,25 @@ function App() {
     return false;
   }
   // console.log(win);
+  function checkDrawn (newBoard){
+    for(let i=0;i<length;i++){
+      for(let j=0;j<length;j++){
+        
+         if(newBoard[i][j]===""){
+          return false;
+         } 
+        
+      }
+    }
+    return true;
+  }
+
+  function handleReset (){
+    generateBoard(length);
+    setWin(false);
+    setDraw(false);
+    setCurrentPlayer("X")
+  }
 
   return (
     <div>
@@ -131,7 +154,10 @@ function App() {
             </div>
           ))
         }
+
         {win && <h1>{currentPlayer} win</h1>} 
+        {draw && <h1>Match drawn</h1>} 
+        {(win || draw) && <button onClick={handleReset}>Reset</button>}
       </div>
     </div>
   );
