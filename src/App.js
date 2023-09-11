@@ -1,16 +1,7 @@
 import { useEffect, useState } from 'react';
-import logo from './logo.svg';
+import io from "socket.io-client"
 
-// length input to take n
-// rows & colms
-// length defined with n
-// function to generate empty board
-// loop iterate n===length
-// Dynamic Board
-// particular row col click check rowInd & COlInd
-// set X & O
-// check if double click on particular rowInd & COlInd it changes X,O
-// check win , if row , col is same , diagonally
+const socket = io.connect("http://localhost:8000");
 
 function App() {
   const initialBoard = [['','',''],['','',''],['','','']]
@@ -35,7 +26,8 @@ function App() {
   }
   console.log(board)  
   function handleClick (RowIndx,ColIndx){
-    if(board[RowIndx][ColIndx]!=="")return;
+    if(win) return; 
+    if(board[RowIndx][ColIndx]!=="") return;
 
     let newBoard = board.map((Row)=>[...Row]);
     newBoard[RowIndx][ColIndx]=currentPlayer;
@@ -45,6 +37,7 @@ function App() {
       setWin(true);
       return;
     }
+
     if(checkDrawn(newBoard)){
       setDraw(true);
       return
@@ -165,3 +158,14 @@ function App() {
 
 
 export default App;
+
+// length input to take n
+// rows & colms
+// length defined with n
+// function to generate empty board
+// loop iterate n===length
+// Dynamic Board
+// particular row col click check rowInd & COlInd
+// set X & O
+// check if double click on particular rowInd & COlInd it changes X,O
+// check win , if row , col is same , diagonally
