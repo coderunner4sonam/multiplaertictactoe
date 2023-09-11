@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import io from "socket.io-client"
 
-const socket = io.connect("https://tictactoe-backend-cqn6.onrender.com");
+const socket = io.connect("https://tictactoebackend-4h20.onrender.com");
 
 function App() {
   const initialBoard = [['','',''],['','',''],['','','']]
