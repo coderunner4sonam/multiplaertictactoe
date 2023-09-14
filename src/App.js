@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import io from "socket.io-client"
-
+// https://tictactoebackend-4h20.onrender.com
 const socket = io.connect("https://tictactoebackend-4h20.onrender.com");
 
 function App() {
@@ -11,8 +11,15 @@ function App() {
   const [win, setWin]=useState(false);
   const [draw, setDraw]=useState(false);
   const [socetID, setSocketID]=useState(null);
+  const [roomId, setRoomId] = useState(null);
+  const [joinRoomFlag, setJoinRoomFlag] = useState(false);
+  const [joinRoomId, setJoinRoomId] = useState(null);
+  const [gameStartFlag, setGameStartFlag] = useState(false);
+  const [error, setError] = useState(false);
+  const [createdId, setCreatedId] = useState(false);
 
   useEffect(()=>{
+    
     socket.on('board', (data)=>{
       setBoard(data);
     })
@@ -31,6 +38,15 @@ function App() {
     socket.on("SocketID", (data)=>{
       setSocketID(data);
     })
+    socket.on("RoomID", (data)=>{
+      setRoomId(data);
+    })
+    socket.on("GameStart", (data)=>{
+      setGameStartFlag(data);
+    })
+    socket.on("CreatedId", (data)=>{
+      setCreatedId(data);
+    })
   },[socket])
 
   function handleLength (e){
@@ -46,7 +62,8 @@ function App() {
       }
      
       newBoard.push(rowArray);
-      setBoard(newBoard)
+      socket.emit("board",newBoard);
+      setBoard(newBoard);
   
     }
   }
@@ -63,20 +80,20 @@ function App() {
     setBoard(newBoard);
     
     if(checkWin(newBoard)){
-      setWin(true);
       socket.emit("winner", true);
+      setWin(true);
       return;
     }
     
     if(checkDrawn(newBoard)){
-      setDraw(true);
       socket.emit("Drawn", true);
+      setDraw(true);
       return
     }
     const nextPlayer = currentPlayer==="X"?"O":"X";
     
-    setCurrentPlayer(nextPlayer);
     socket.emit("currentPlayer", nextPlayer);
+    setCurrentPlayer(nextPlayer);
     
     socket.emit("SocketID", socket.id);
     setSocketID(socket.id);
@@ -85,11 +102,6 @@ function App() {
       
   function checkWin (newBoard){
 
-    // check row win
-    // 00 01 02
-    // 10 11 12
-    // 20 21 22 
-    
     for(let i=0; i<length;i++){
       let flag=true;
       for(let j=0; j<length;j++){
@@ -154,16 +166,41 @@ function App() {
         
       }
     }
+    
     return true;
   }
 
   function handleReset (){
     generateBoard(length);
+    socket.emit("winner", false);
     setWin(false);
+    socket.emit("Drawn", false);
     setDraw(false);
+    socket.emit("currentPlayer", 'X');
     setCurrentPlayer("X")
   }
   console.log(currentPlayer);
+  function handleCreateRoom (){
+    socket.emit("CreatedId",true);  
+    setCreatedId(true);
+    socket.emit("RoomID", socket.id);
+    setRoomId(socket.id);
+  }
+  console.log(roomId);
+
+  function handleJoinRoom (){
+    
+    if(roomId!==joinRoomId){
+      setError(true);
+      return;
+    }
+    setJoinRoomFlag(false);
+    socket.emit("CreatedId",false);
+    setCreatedId(false);
+    socket.emit("GameStart", true);
+    setGameStartFlag(true);
+  }
+
   return (
     <div style={parentStyle}>
       <div style={subParentStyle}>
@@ -172,32 +209,55 @@ function App() {
             <button onClick={()=>generateBoard(length)} style={buttonStyle}>Enter Number</button>
         </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-          {
-              board.map((row,rowInd)=>(
-              <div  style={{display:"flex",justifyContent:"center",alignItems:"center",border:"1px solid black",height:"100px",width:`${100*length}px`}}>
-                {
-                  board[rowInd].map((col,colInd)=>(
-                    <div  onClick={()=>handleClick(rowInd,colInd)} style={{cursor:"pointer",border:"1px solid black",height:"100px",width:`${100*length}px`,textAlign:"center"}}>
-                      <h1>{board[rowInd][colInd]}</h1>
-                    </div>
-                  ))
-                }
-                
-              </div>
-            ))
-          }
-
-          {win && <h1>{currentPlayer} win</h1>} 
-          {draw && <h1>Match drawn</h1>} 
-          {(win || draw) && <button onClick={handleReset}>Reset</button>}
+      <div>
+        <div style={createParentRoomStyle}>
+          <button style={createRoomButtonStyle} onClick={handleCreateRoom}>Create Room</button>
+          <button style={createRoomButtonStyle} onClick={()=>setJoinRoomFlag(true)}>Join Room</button>
+        </div>
       </div>
+      {joinRoomFlag && 
+         <div style={subParentStyle}>
+          <div style={InputParentStyle}>
+              <input type='text' placeholder='please enter room id' onChange={(e)=>setJoinRoomId(e.target.value)} style={inputStyle}/>
+              <button style={buttonStyle} onClick={handleJoinRoom}>Enter Id</button>
+          </div>
+       </div>
+      }
+
+      {(createdId && socket.id===roomId) && <h2 style={{textAlign:"center"}}>{roomId}</h2>} 
+
+      {gameStartFlag && 
+        <div style={boxParentStyle}>
+            {
+                board.map((row,rowInd)=>(
+                <div  style={{display:"flex",justifyContent:"center",alignItems:"center",border:"1px solid black",height:"100px",width:`${100*length}px`}}>
+                  {
+                    board[rowInd].map((col,colInd)=>(
+                      <div  onClick={()=>handleClick(rowInd,colInd)} style={{cursor:"pointer",border:"1px solid black",height:"100px",width:`${100*length}px`,textAlign:"center"}}>
+                        <h1>{board[rowInd][colInd]}</h1>
+                      </div>
+                    ))
+                  }
+                  
+                </div>
+              ))
+            }
+
+            {win && <h1>{currentPlayer} win</h1>} 
+            {draw && <h1>Match drawn</h1>} 
+            {(win || draw) && <button onClick={handleReset}>Reset</button>}
+        </div>
+      }
+      {
+        error && <h2 style={{textAlign:"center"}}>Please enter valid id</h2>
+      }
     </div>
   );
 }
 
 const parentStyle = {
   backgroundColor: '#f0f0f0',
+  height: '100vh'
 }
 
 const subParentStyle = { 
@@ -206,6 +266,31 @@ const subParentStyle = {
   alignItems: 'flex-start',
 }
 
+const createParentRoomStyle = {
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginTop: '10px'
+}
+
+const createRoomButtonStyle={
+  padding: '10px 20px',
+  fontSize: '16px',
+  backgroundColor: '#007bff',
+  color: '#fff',
+  order: 'none',
+  borderRadius: '4px',
+  cursor: 'pointer',
+  marginLeft: '5px'
+}
+
+const boxParentStyle={ 
+  display: 'flex', 
+  flexDirection: 'column', 
+  alignItems: 'center', 
+  justifyContent: 'center', 
+  height: '60vh' 
+}
 const InputParentStyle = {
   backgroundColor: '#fff',
   padding: '20px',
@@ -230,13 +315,4 @@ const buttonStyle = {
 
 export default App;
 
-// length input to take n
-// rows & colms
-// length defined with n
-// function to generate empty board
-// loop iterate n===length
-// Dynamic Board
-// particular row col click check rowInd & COlInd
-// set X & O
-// check if double click on particular rowInd & COlInd it changes X,O
-// check win , if row , col is same , diagonally
+
