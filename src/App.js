@@ -205,7 +205,7 @@ function App() {
     <div style={parentStyle}>
       <div style={subParentStyle}>
         <div style={InputParentStyle}>
-            <input type='text' placeholder='please enter number >= 3' onChange={handleLength} style={inputStyle}/>
+            <input type='text' placeholder='please enter a number >= 3' onChange={handleLength} style={inputStyle}/>
             <button onClick={()=>generateBoard(length)} style={buttonStyle}>Enter Number</button>
         </div>
       </div>
